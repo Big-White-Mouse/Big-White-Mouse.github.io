@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport"
+	      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Document</title>
+	<style>
+		*{
+            padding: 0;
+            margin: 0;
+		}
+		html{
+            height: 100%;
+		}
+		body{
+			overflow: hidden;
+            height: 100%;
+            background-color: #1d2935;
+		}
+		.middle-box{
+            width: 1200px;
+            margin: 100px auto;
+			display: flex;
+            background-color: #2c3e50;
+		}
+
+		.btn-box{
+			flex: 1;
+            background-color: #253647;
+		}
+        .btn{
+            width: 100%;
+            height: 50px;
+	        transition: all 0.1s ease;
+
+	        color: #abd5e2;
+	        font-size: 18px;
+	        letter-spacing: 2px;
+            text-align: center;
+	        line-height: 50px;
+            cursor: pointer;
+        }
+        .btn span{
+	        cursor: pointer;
+        }
+        .btn:hover{
+            background-color: #516c86;
+        }
+
+		.sort-box{
+			flex: 6;
+			display: flex;
+			flex-wrap: wrap;
+		}
+		.sort{
+			display: flex;
+            width: 50%;
+            height: 200px;
+			box-sizing: border-box;
+            border-bottom: 1px solid #1d2935;
+            border-left: 1px solid #1d2935;
+			flex-wrap: wrap;
+		}
+		.sort .span{
+			display: flex;
+            height: 24px;
+            width: 100%;
+			padding-left: 6px;
+			flex-wrap: nowrap;
+		}
+		.span span{
+			display: block;
+			flex: 3;
+            height: 100%;
+
+			color: #aec4cb;
+			line-height: 24px;
+			font-size: 15px;
+		}
+        .span span:nth-child(1){
+			color: #d5f4fd;
+			font-size: 16px;
+        }
+        .span span:nth-child(4){
+			flex: 2;
+        }
+		.canvas{
+			display: flex;
+			box-sizing: border-box;
+            height: 170px;
+            width: 100%;
+			justify-content: space-around;
+			align-items: flex-end;
+			padding: 0 10px 10px 10px;
+		}
+		.line-onload{
+			transition: all 0.4s cubic-bezier(0.5, 0, 0.2, 1);
+		}
+		.line{
+            width: 3px;
+            height: 1px;
+            background-color: #42b983;
+		}
+	</style>
+</head>
+<body>
+<div class="middle-box">
+	<div class="btn-box">
+		<div class="btn generate-numbers" id="generateNumbers">
+			<span>生成随机数</span>
+		</div>
+		<div class="btn start" id="start">
+			<span>开始</span>
+		</div>
+		<div class="btn restart" id="restart">
+			<span>归位</span>
+		</div>
+		<div class="btn reset" id="reset">
+			<span>归零</span>
+		</div>
+	</div>
+	<div class="sort-box">
+		<div class="sort bubbleSort">
+			<div class="span">
+				<span>冒泡排序</span>
+				<span id="compare1">比较次数:</span>
+				<span id="move1">移动次数:</span>
+				<span id="time1">耗时:</span>
+			</div>
+			<div class="canvas"></div>
+		</div>
+		<div class="sort insertSort">
+			<div class="span">
+				<span>插入排序</span>
+				<span id="compare2">比较次数:</span>
+				<span id="move2">移动次数:</span>
+				<span id="time2">耗时:</span>
+			</div>
+			<div class="canvas"></div>
+		</div>
+		<div class="sort selectSort">
+			<div class="span">
+				<span>选择排序</span>
+				<span id="compare3">比较次数:</span>
+				<span id="move3">移动次数:</span>
+				<span id="time3">耗时:</span>
+			</div>
+			<div class="canvas"></div>
+		</div>
+		<div class="sort quickSort">
+			<div class="span">
+				<span>快速排序</span>
+				<span id="compare4">比较次数:</span>
+				<span id="move4">移动次数:</span>
+				<span id="time4">耗时:</span>
+			</div>
+			<div class="canvas"></div>
+		</div>
+		<div class="sort mergeSort">
+			<div class="span">
+				<span>归并排序</span>
+				<span id="compare5">比较次数:</span>
+				<span id="move5">移动次数:</span>
+				<span id="time5">耗时:</span>
+			</div>
+			<div class="canvas"></div>
+		</div>
+		<div class="sort bucketSort">
+			<div class="span">
+				<span>堆排序</span>
+				<span id="compare6">比较次数:</span>
+				<span id="move6">移动次数:</span>
+				<span id="time6">耗时:</span>
+			</div>
+			<div class="canvas"></div>
+		</div>
+	</div>
+</div>
+</body>
+<script>
+
+let canvases = document.querySelectorAll('.canvas')
+window.onload = ()=>{
+    //生成所有的代表随机数大小的柱
+    for(let i = 0; i < canvases.length; i++){
+        for(let j = 0; j < N; j++){
+            let line = document.createElement('div')
+            line.classList.add('line')
+            canvases[i].appendChild(line)
+        }
+    }
+}
+
+/** 暂定生成50个随机数，  每个随机数大小在 1~100 之间*/
+//随机数个数
+let N = 123 //123 3px
+//随机数最大值
+let MAX = 100
+//原始数组
+let array = []
+//单位时间 毫秒
+let T = 8
+
+let compare1 = 0, move1 = 0 //快排
+let compare2 = 0, move2 = 0 //归并
+let compare3 = 0, move3 = 0 //堆排序
+
+//生成随机数
+document.getElementById('generateNumbers').onclick = ()=>{
+    //清除耗时
+    clearTime()
+    //添加过渡效果
+    let lines = document.querySelectorAll('.line')
+    for(let i = 0; i < lines.length; i++){
+        lines[i].classList.add('line-onload')
+    }
+    //生成随机数
+	for(let i = 0; i < N; i++){
+	    array[i] = parseInt(MAX*Math.random() + 1)
+	}
+    console.log(array);
+    //通过随机数计算每一个line的高度
+    for(let i = 0; i < canvases.length; i++){
+        for(let j = 0; j < N; j++){
+            canvases[i].children[j].style.height = parseInt(1.7 * array[j]) + 'px'
+        }
+    }
+	//移除过渡效果
+	setTimeout(()=>{
+	    for(let i = 0; i < lines.length; i++){
+	        lines[i].classList.remove('line-onload')
+	    }
+	},400)
+}
+//开始
+document.getElementById('start').onclick = async ()=>{
+	// 冒泡排序
+    await bubbleSort([...array])
+
+	//插入排序
+	await insertSort([...array])
+
+    //选择排序
+	await selectSort([...array])
+
+	//快速排序
+    let start1 = performance.now()
+    await quickSort_Standard([...array], 0, N-1)
+    let end1 = performance.now()
+    document.getElementById('compare4').innerText = '比较次数: ' + compare1
+    document.getElementById('move4').innerText = '移动次数: ' + move1
+    document.getElementById('time4').innerText = '耗时: ' + ((end1 - start1)/1000).toFixed(1) + 's'
+
+	//归并排序
+    let start2 = performance.now()
+    await mergeSort_Standard([...array], 0, N-1)
+    let end2 = performance.now()
+    document.getElementById('compare5').innerText = '比较次数: ' + compare2
+    document.getElementById('move5').innerText = '移动次数: ' + move2
+    document.getElementById('time5').innerText = '耗时: ' + ((end2 - start2)/1000).toFixed(1) + 's'
+
+    //堆排序
+	await heapSort([...array])
+    document.getElementById('compare6').innerText = '比较次数: ' + compare3
+    document.getElementById('move6').innerText = '移动次数: ' + move3
+}
+//归位
+document.getElementById('restart').onclick = ()=>{
+    //添加过渡效果
+    let lines = document.querySelectorAll('.line')
+    for(let i = 0; i < lines.length; i++){
+        lines[i].classList.add('line-onload')
+    }
+    //通过随机数计算每一个line的高度
+    for(let i = 0; i < canvases.length; i++){
+        for(let j = 0; j < N; j++){
+            canvases[i].children[j].style.height = parseInt(1.7 * array[j]) + 'px'
+        }
+    }
+    //移除过渡效果
+    setTimeout(()=>{
+        for(let i = 0; i < lines.length; i++){
+            lines[i].classList.remove('line-onload')
+        }
+    },400)
+}
+//归零
+document.getElementById('reset').onclick = ()=>{
+    clearTime()
+    //添加过渡效果
+    let lines = document.querySelectorAll('.line')
+    for(let i = 0; i < lines.length; i++){
+        lines[i].classList.add('line-onload')
+    }
+    //归零
+    for(let i = 0; i < canvases.length; i++){
+        for(let j = 0; j < N; j++){
+            canvases[i].children[j].style.height = '1px'
+        }
+    }
+    //移除过渡效果
+    setTimeout(()=>{
+        for(let i = 0; i < lines.length; i++){
+            lines[i].classList.remove('line-onload')
+        }
+    },400)
+}
+//手动实现sleep函数
+function sleep(delay){
+    return new Promise(resolve => setTimeout(resolve, delay))
+}
+
+//冒泡排序
+let bubbleSort = async (arr)=>{
+    let start = performance.now()
+	let move = 0, compare = 0;
+    for (let i = 0; i < arr.length; i++) {
+        for (let j = arr.length - 1; j > i; j--) {
+            if (arr[j] < arr[j - 1]) {
+                [arr[j-1], arr[j]] = [arr[j], arr[j-1]]
+	            move += 3
+            }
+            compare += 1
+
+            for(let x = 0; x < N; x++) canvases[0].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
+            await sleep(T)
+        }
+    }
+    let end = performance.now()
+	document.getElementById('compare1').innerText = '比较次数: ' + compare
+	document.getElementById('move1').innerText = '移动次数: ' + move
+	document.getElementById('time1').innerText = '耗时: ' + ((end - start)/1000).toFixed(1) + 's'
+}
+//插入排序
+let insertSort = async (arr)=>{
+    let start = performance.now()
+	let compare = 0, move = 0
+    for(let i=1; i < arr.length; i++){
+        let tmp = arr[i]
+        let j = i-1
+        await sleep(T)
+	    while(tmp < arr[j] && j >= 0){
+            compare += 1
+            arr[j+1] = arr[j]
+            j--
+            move += 1
+            for(let x = 0; x < N; x++) canvases[1].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
+            await sleep(T)
+	    }
+	    arr[j+1] = tmp
+        move += 1
+        for(let x = 0; x < N; x++) canvases[1].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
+    }
+
+    let end = performance.now()
+    document.getElementById('compare2').innerText = '比较次数: ' + compare
+    document.getElementById('move2').innerText = '移动次数: ' + move
+    document.getElementById('time2').innerText = '耗时: ' + ((end - start)/1000).toFixed(1) + 's'
+}
+//选择排序
+let selectSort = async (arr)=>{
+    let start = performance.now()
+    let compare = 0, move = 0
+
+    for (let i = 0; i < arr.length - 1; i++) {
+        let minIndex = i
+        for (let j = i + 1; j < arr.length; j++) {
+            if(arr[j] < arr[minIndex]){
+                minIndex = j
+                move += 1
+	        }
+            compare += 1
+            await sleep(T)
+        }
+        [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]]
+	    move += 3
+        for(let x = 0; x < N; x++) canvases[2].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
+    }
+
+    let end = performance.now()
+    document.getElementById('compare3').innerText = '比较次数: ' + compare
+    document.getElementById('move3').innerText = '移动次数: ' + move
+    document.getElementById('time3').innerText = '耗时: ' + ((end - start)/1000).toFixed(1) + 's'
+}
+//快速排序
+	//谷歌快排
+let quickSort_Google  = async (arr)=>{
+    if (arr.length <= 1) return arr //剩余一个不用排序
+    let left = [], right = [] //左右数组
+    let num = Math.floor(arr.length / 2) //中间的下标
+    let numValue = arr.splice(num, 1)[0] //获取数组arr下标为num的数数字
+    for (let i = 0; i < arr.length; i++) {
+        if (arr[i] > numValue) right.push(arr[i])
+        else left.push(arr[i])
+    }
+    return [...await quickSort_Google(left), numValue, ...await quickSort_Google(right)]
+}
+	//标准快排
+let quickSort_Standard = async (arr, left, right)=>{
+    if(left >= right) return arr //递归退出条件
+    let i = left, j = right //左右指针
+    let base = arr[left] //基数
+
+	compare1 += 1
+    while (i < j) {
+        // 从右边起，寻找比基数小的数
+	    compare1 += 1
+        while (i<j && arr[j] >= base) {
+            j--
+            compare1 += 1
+	        await sleep(T)
+        }
+        // 从左边起，寻找比基数大的数
+        compare1 += 1
+        while (i<j && arr[i] <= base) {
+            i++
+            compare1 += 1
+	        await sleep(T)
+        }
+        compare1 += 1
+        if (i<j) {
+            [arr[i], arr[j]] = [arr[j], arr[i]]
+	        move1 += 3
+        }
+        for(let x = 0; x < N; x++) canvases[3].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
+	    compare1 += 1
+    }
+    arr[left] = arr[i];
+    arr[i] = base;
+    await quickSort_Standard(arr, left, i-1);
+    await quickSort_Standard(arr, i+1, right);
+	return arr;
+}
+//归并排序
+	//js归并
+let mergeSort_Js  = (arr)=>{
+    if (arr.length < 2) return arr
+    let middle = Math.floor(arr.length / 2)
+    return merge_Js(mergeSort_Js(arr.slice(0, middle)), mergeSort_Js(arr.slice(middle)));
+}
+let merge_Js = (left, right)=>{
+    let result = [];
+    while (left.length && right.length) left[0] < right[0] ? result.push(left.shift()) : result.push(right.shift());
+    return result.concat(left, right);
+}
+	//标准归并
+let mergeSort_Standard = async (arr, left, right)=>{
+    if(left >= right) return
+	await mergeSort_Standard(arr, left, Math.floor((left+right)/2))
+    await mergeSort_Standard(arr, Math.floor((left+right)/2) + 1, right)
+    await merge_Standard(arr, left, right, Math.floor((left+right)/2))
+}
+let merge_Standard = async (arr, left, right, middle)=>{
+    await sleep(T)
+    let tmp = [...arr].splice(left, right-left+1)
+    let i = 0
+    let j = middle - left + 1;
+    compare2 += (right - left + 1)
+    move2 += (right - left + 1)*2
+    for(let k = left; k <= right; k++) {
+        if(i>middle-left || tmp[i]>tmp[j]) arr[k]=tmp[j++] //左子树遍历结束 或 。。。
+        else arr[k]=tmp[i++]//右子树遍历结束 或 。。。
+        for(let x = 0; x < N; x++) canvases[4].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
+        await sleep(T*2)
+    }
+}
+//堆排序
+let heapSort = async (arr)=>{
+    let start = performance.now()
+    //初始化大顶堆，从第一个非叶子结点开始
+    for(let i = Math.floor(arr.length/2-1); i>=0; i--) {
+	    await shiftDown(arr, i, arr.length)
+        await sleep(T)
+    }
+    // 排序，每一次for循环找出一个当前最大值，数组长度减一
+    for(let i = arr.length-1; i>0; i--) {
+	    [arr[0], arr[i]] = [arr[i], arr[0]] // 根节点与最后一个节点交换
+        await sleep(T)
+        await shiftDown(arr, 0, i)
+        for(let x = 0; x < N; x++) canvases[5].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
+    }
+    let end = performance.now()
+    document.getElementById('time6').innerText = '耗时: ' + ((end - start)/1000).toFixed(1) + 's'
+}
+let shiftDown = async (arr, i, length)=>{
+    let tmp = arr[i] // 当前父节点
+    for(let j = 2*i + 1; j<length; j = 2*j+1) {
+        await sleep(T)
+        tmp = arr[i];  // 将 arr[i] 取出，整个过程相当于找到 arr[i] 应处于的位置
+	    compare3 += 1
+        if(arr[j] < arr[j + 1] && j+1 < length) {
+            j++ // 找到两个孩子中较大的一个，再与父节点比较
+        }
+        compare3 += 1
+        if(tmp < arr[j]) {
+            [arr[i], arr[j]] = [arr[j], arr[i]] // 如果父节点小于子节点:交换；否则跳出
+	        move3 += 3
+            i = j  // 交换后，tmp 的下标变为 j
+        } else break
+    }
+}
+//清除耗时数据
+let clearTime = ()=>{
+    for(let i = 1; i < 7; i++){
+        document.getElementById('time' + i).innerText = '耗时:'
+    }
+}
+
+</script>
+</html>
