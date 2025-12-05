@@ -1,512 +1,281 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="zh">
+
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport"
-	      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-	<meta http-equiv="X-UA-Compatible" content="ie=edge">
-	<title>Document</title>
-	<style>
-		*{
-            padding: 0;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 手势控制粒子系统</title>
+    <style>
+        body {
             margin: 0;
-		}
-		html{
-            height: 100%;
-		}
-		body{
-			overflow: hidden;
-            height: 100%;
-            background-color: #1d2935;
-		}
-		.middle-box{
-            width: 1200px;
-            margin: 100px auto;
-			display: flex;
-            background-color: #2c3e50;
-		}
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-		.btn-box{
-			flex: 1;
-            background-color: #253647;
-		}
-        .btn{
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 50px;
-	        transition: all 0.1s ease;
-
-	        color: #abd5e2;
-	        font-size: 18px;
-	        letter-spacing: 2px;
-            text-align: center;
-	        line-height: 50px;
-            cursor: pointer;
-        }
-        .btn span{
-	        cursor: pointer;
-        }
-        .btn:hover{
-            background-color: #516c86;
-        }
-
-		.sort-box{
-			flex: 6;
-			display: flex;
-			flex-wrap: wrap;
-		}
-		.sort{
-			display: flex;
-            width: 50%;
-            height: 200px;
-			box-sizing: border-box;
-            border-bottom: 1px solid #1d2935;
-            border-left: 1px solid #1d2935;
-			flex-wrap: wrap;
-		}
-		.sort .span{
-			display: flex;
-            height: 24px;
-            width: 100%;
-			padding-left: 6px;
-			flex-wrap: nowrap;
-		}
-		.span span{
-			display: block;
-			flex: 3;
             height: 100%;
+            z-index: 1;
+        }
 
-			color: #aec4cb;
-			line-height: 24px;
-			font-size: 15px;
-		}
-        .span span:nth-child(1){
-			color: #d5f4fd;
-			font-size: 16px;
+        /* 摄像头预览 (左下角，镜像翻转) */
+        #video-container {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 200px;
+            height: 150px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
-        .span span:nth-child(4){
-			flex: 2;
-        }
-		.canvas{
-			display: flex;
-			box-sizing: border-box;
-            height: 170px;
+
+        #input-video {
             width: 100%;
-			justify-content: space-around;
-			align-items: flex-end;
-			padding: 0 10px 10px 10px;
-		}
-		.line-onload{
-			transition: all 0.4s cubic-bezier(0.5, 0, 0.2, 1);
-		}
-		.line{
-            width: 3px;
-            height: 1px;
-            background-color: #42b983;
-		}
-	</style>
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            /* 镜像 */
+        }
+
+        /* 加载提示 */
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            z-index: 20;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+    </style>
+
+    <script src="https://unpkg.com/three@0.132.2/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.17.0/dist/lil-gui.umd.min.js"></script>
 </head>
+
 <body>
-<div class="middle-box">
-	<div class="btn-box">
-		<div class="btn generate-numbers" id="generateNumbers">
-			<span>生成随机数</span>
-		</div>
-		<div class="btn start" id="start">
-			<span>开始</span>
-		</div>
-		<div class="btn restart" id="restart">
-			<span>归位</span>
-		</div>
-		<div class="btn reset" id="reset">
-			<span>归零</span>
-		</div>
-	</div>
-	<div class="sort-box">
-		<div class="sort bubbleSort">
-			<div class="span">
-				<span>冒泡排序</span>
-				<span id="compare1">比较次数:</span>
-				<span id="move1">移动次数:</span>
-				<span id="time1">耗时:</span>
-			</div>
-			<div class="canvas"></div>
-		</div>
-		<div class="sort insertSort">
-			<div class="span">
-				<span>插入排序</span>
-				<span id="compare2">比较次数:</span>
-				<span id="move2">移动次数:</span>
-				<span id="time2">耗时:</span>
-			</div>
-			<div class="canvas"></div>
-		</div>
-		<div class="sort selectSort">
-			<div class="span">
-				<span>选择排序</span>
-				<span id="compare3">比较次数:</span>
-				<span id="move3">移动次数:</span>
-				<span id="time3">耗时:</span>
-			</div>
-			<div class="canvas"></div>
-		</div>
-		<div class="sort quickSort">
-			<div class="span">
-				<span>快速排序</span>
-				<span id="compare4">比较次数:</span>
-				<span id="move4">移动次数:</span>
-				<span id="time4">耗时:</span>
-			</div>
-			<div class="canvas"></div>
-		</div>
-		<div class="sort mergeSort">
-			<div class="span">
-				<span>归并排序</span>
-				<span id="compare5">比较次数:</span>
-				<span id="move5">移动次数:</span>
-				<span id="time5">耗时:</span>
-			</div>
-			<div class="canvas"></div>
-		</div>
-		<div class="sort bucketSort">
-			<div class="span">
-				<span>堆排序</span>
-				<span id="compare6">比较次数:</span>
-				<span id="move6">移动次数:</span>
-				<span id="time6">耗时:</span>
-			</div>
-			<div class="canvas"></div>
-		</div>
-	</div>
-</div>
-</body>
-<script>
 
-let canvases = document.querySelectorAll('.canvas')
-window.onload = ()=>{
-    //生成所有的代表随机数大小的柱
-    for(let i = 0; i < canvases.length; i++){
-        for(let j = 0; j < N; j++){
-            let line = document.createElement('div')
-            line.classList.add('line')
-            canvases[i].appendChild(line)
+    <div id="loader">正在启动摄像头与AI模型...</div>
+    <div id="video-container">
+        <video id="input-video"></video>
+    </div>
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- 1. Three.js 场景初始化 ---
+        const scene = new THREE.Scene();
+        // 添加一点环境雾
+        scene.fog = new THREE.FogExp2(0x000000, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 2.0;
+
+        // --- 2. 粒子系统核心逻辑 ---
+        const particleCount = 15000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const targetPositions = new Float32Array(particleCount * 3); // 存储目标形状的位置
+
+        // 初始化位置 (随机分布)
+        for (let i = 0; i < particleCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 50;
+            targetPositions[i] = positions[i];
         }
-    }
-}
 
-/** 暂定生成50个随机数，  每个随机数大小在 1~100 之间*/
-//随机数个数
-let N = 123 //123 3px
-//随机数最大值
-let MAX = 100
-//原始数组
-let array = []
-//单位时间 毫秒
-let T = 8
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-let compare1 = 0, move1 = 0 //快排
-let compare2 = 0, move2 = 0 //归并
-let compare3 = 0, move3 = 0 //堆排序
+        // 材质
+        const material = new THREE.PointsMaterial({
+            color: 0x00ffff,
+            size: 0.15,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
 
-//生成随机数
-document.getElementById('generateNumbers').onclick = ()=>{
-    //清除耗时
-    clearTime()
-    //添加过渡效果
-    let lines = document.querySelectorAll('.line')
-    for(let i = 0; i < lines.length; i++){
-        lines[i].classList.add('line-onload')
-    }
-    //生成随机数
-	for(let i = 0; i < N; i++){
-	    array[i] = parseInt(MAX*Math.random() + 1)
-	}
-    console.log(array);
-    //通过随机数计算每一个line的高度
-    for(let i = 0; i < canvases.length; i++){
-        for(let j = 0; j < N; j++){
-            canvases[i].children[j].style.height = parseInt(1.7 * array[j]) + 'px'
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // --- 3. 形状生成数学函数 ---
+
+        function getPointOnSphere(idx) {
+            const phi = Math.acos(-1 + (2 * idx) / particleCount);
+            const theta = Math.sqrt(particleCount * Math.PI) * phi;
+            const r = 10;
+            return {
+                x: r * Math.cos(theta) * Math.sin(phi),
+                y: r * Math.sin(theta) * Math.sin(phi),
+                z: r * Math.cos(phi)
+            };
         }
-    }
-	//移除过渡效果
-	setTimeout(()=>{
-	    for(let i = 0; i < lines.length; i++){
-	        lines[i].classList.remove('line-onload')
-	    }
-	},400)
-}
-//开始
-document.getElementById('start').onclick = async ()=>{
-	// 冒泡排序
-    await bubbleSort([...array])
 
-	//插入排序
-	await insertSort([...array])
+        function getPointOnHeart(idx) {
+            // 心形参数方程
+            const t = (idx / particleCount) * Math.PI * 2;
+            // 随机分布在体积内
+            const r = 1.2;
+            // 使用更复杂的3D心形公式
+            let x, y, z;
+            // 简单的参数分布
+            const phi = Math.random() * Math.PI * 2;
+            const theta = Math.random() * Math.PI;
 
-    //选择排序
-	await selectSort([...array])
+            // 此处使用特定形状映射，为了简单，我们用随机采样+数学修正
+            // 这里使用一个经典的心形公式
+            const beta = Math.random() * Math.PI * 2;
+            const alpha = Math.random() * Math.PI;
 
-	//快速排序
-    let start1 = performance.now()
-    await quickSort_Standard([...array], 0, N-1)
-    let end1 = performance.now()
-    document.getElementById('compare4').innerText = '比较次数: ' + compare1
-    document.getElementById('move4').innerText = '移动次数: ' + move1
-    document.getElementById('time4').innerText = '耗时: ' + ((end1 - start1)/1000).toFixed(1) + 's'
+            x = 16 * Math.pow(Math.sin(beta), 3);
+            y = 13 * Math.cos(beta) - 5 * Math.cos(2 * beta) - 2 * Math.cos(3 * beta) - Math.cos(4 * beta);
+            z = 5 * Math.cos(alpha) * Math.sin(beta); // 给予Z轴厚度
 
-	//归并排序
-    let start2 = performance.now()
-    await mergeSort_Standard([...array], 0, N-1)
-    let end2 = performance.now()
-    document.getElementById('compare5').innerText = '比较次数: ' + compare2
-    document.getElementById('move5').innerText = '移动次数: ' + move2
-    document.getElementById('time5').innerText = '耗时: ' + ((end2 - start2)/1000).toFixed(1) + 's'
-
-    //堆排序
-	await heapSort([...array])
-    document.getElementById('compare6').innerText = '比较次数: ' + compare3
-    document.getElementById('move6').innerText = '移动次数: ' + move3
-}
-//归位
-document.getElementById('restart').onclick = ()=>{
-    //添加过渡效果
-    let lines = document.querySelectorAll('.line')
-    for(let i = 0; i < lines.length; i++){
-        lines[i].classList.add('line-onload')
-    }
-    //通过随机数计算每一个line的高度
-    for(let i = 0; i < canvases.length; i++){
-        for(let j = 0; j < N; j++){
-            canvases[i].children[j].style.height = parseInt(1.7 * array[j]) + 'px'
+            return { x: x * 0.5, y: y * 0.5, z: z * 0.5 };
         }
-    }
-    //移除过渡效果
-    setTimeout(()=>{
-        for(let i = 0; i < lines.length; i++){
-            lines[i].classList.remove('line-onload')
-        }
-    },400)
-}
-//归零
-document.getElementById('reset').onclick = ()=>{
-    clearTime()
-    //添加过渡效果
-    let lines = document.querySelectorAll('.line')
-    for(let i = 0; i < lines.length; i++){
-        lines[i].classList.add('line-onload')
-    }
-    //归零
-    for(let i = 0; i < canvases.length; i++){
-        for(let j = 0; j < N; j++){
-            canvases[i].children[j].style.height = '1px'
-        }
-    }
-    //移除过渡效果
-    setTimeout(()=>{
-        for(let i = 0; i < lines.length; i++){
-            lines[i].classList.remove('line-onload')
-        }
-    },400)
-}
-//手动实现sleep函数
-function sleep(delay){
-    return new Promise(resolve => setTimeout(resolve, delay))
-}
 
-//冒泡排序
-let bubbleSort = async (arr)=>{
-    let start = performance.now()
-	let move = 0, compare = 0;
-    for (let i = 0; i < arr.length; i++) {
-        for (let j = arr.length - 1; j > i; j--) {
-            if (arr[j] < arr[j - 1]) {
-                [arr[j-1], arr[j]] = [arr[j], arr[j-1]]
-	            move += 3
+        function getPointOnSaturn(idx) {
+            const ratio = 0.7; // 70% 粒子在星球，30% 在环
+            const isPlanet = Math.random() < ratio;
+
+            if (isPlanet) {
+                const r = 6;
+                const phi = Math.acos(-1 + (2 * Math.random()));
+                const theta = Math.sqrt(particleCount * Math.PI) * phi;
+                return {
+                    x: r * Math.cos(theta) * Math.sin(phi),
+                    y: r * Math.sin(theta) * Math.sin(phi),
+                    z: r * Math.cos(phi)
+                };
+            } else {
+                // 环
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 9 + Math.random() * 5;
+                return {
+                    x: Math.cos(angle) * dist,
+                    y: (Math.random() - 0.5) * 0.5, // 扁平
+                    z: Math.sin(angle) * dist
+                };
             }
-            compare += 1
-
-            for(let x = 0; x < N; x++) canvases[0].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
-            await sleep(T)
         }
-    }
-    let end = performance.now()
-	document.getElementById('compare1').innerText = '比较次数: ' + compare
-	document.getElementById('move1').innerText = '移动次数: ' + move
-	document.getElementById('time1').innerText = '耗时: ' + ((end - start)/1000).toFixed(1) + 's'
-}
-//插入排序
-let insertSort = async (arr)=>{
-    let start = performance.now()
-	let compare = 0, move = 0
-    for(let i=1; i < arr.length; i++){
-        let tmp = arr[i]
-        let j = i-1
-        await sleep(T)
-	    while(tmp < arr[j] && j >= 0){
-            compare += 1
-            arr[j+1] = arr[j]
-            j--
-            move += 1
-            for(let x = 0; x < N; x++) canvases[1].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
-            await sleep(T)
-	    }
-	    arr[j+1] = tmp
-        move += 1
-        for(let x = 0; x < N; x++) canvases[1].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
-    }
 
-    let end = performance.now()
-    document.getElementById('compare2').innerText = '比较次数: ' + compare
-    document.getElementById('move2').innerText = '移动次数: ' + move
-    document.getElementById('time2').innerText = '耗时: ' + ((end - start)/1000).toFixed(1) + 's'
-}
-//选择排序
-let selectSort = async (arr)=>{
-    let start = performance.now()
-    let compare = 0, move = 0
+        function getPointOnDNA(idx) {
+            const t = (idx / particleCount) * 30; // 长度
+            const radius = 5;
+            // 双螺旋
+            const branch = idx % 2 === 0 ? 1 : -1;
 
-    for (let i = 0; i < arr.length - 1; i++) {
-        let minIndex = i
-        for (let j = i + 1; j < arr.length; j++) {
-            if(arr[j] < arr[minIndex]){
-                minIndex = j
-                move += 1
-	        }
-            compare += 1
-            await sleep(T)
+            return {
+                x: Math.cos(t) * radius + (Math.random() - 0.5),
+                y: (idx / particleCount - 0.5) * 40, // 高度拉伸
+                z: Math.sin(t) * radius + branch * 2 // 分开两条链
+            };
         }
-        [arr[i], arr[minIndex]] = [arr[minIndex], arr[i]]
-	    move += 3
-        for(let x = 0; x < N; x++) canvases[2].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
-    }
 
-    let end = performance.now()
-    document.getElementById('compare3').innerText = '比较次数: ' + compare
-    document.getElementById('move3').innerText = '移动次数: ' + move
-    document.getElementById('time3').innerText = '耗时: ' + ((end - start)/1000).toFixed(1) + 's'
-}
-//快速排序
-	//谷歌快排
-let quickSort_Google  = async (arr)=>{
-    if (arr.length <= 1) return arr //剩余一个不用排序
-    let left = [], right = [] //左右数组
-    let num = Math.floor(arr.length / 2) //中间的下标
-    let numValue = arr.splice(num, 1)[0] //获取数组arr下标为num的数数字
-    for (let i = 0; i < arr.length; i++) {
-        if (arr[i] > numValue) right.push(arr[i])
-        else left.push(arr[i])
-    }
-    return [...await quickSort_Google(left), numValue, ...await quickSort_Google(right)]
-}
-	//标准快排
-let quickSort_Standard = async (arr, left, right)=>{
-    if(left >= right) return arr //递归退出条件
-    let i = left, j = right //左右指针
-    let base = arr[left] //基数
+        function getPointExplosion(idx) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            const r = Math.random() * 30; // 扩散半径
+            return {
+                x: r * Math.sin(phi) * Math.cos(theta),
+                y: r * Math.sin(phi) * Math.sin(theta),
+                z: r * Math.cos(phi)
+            };
+        }
 
-	compare1 += 1
-    while (i < j) {
-        // 从右边起，寻找比基数小的数
-	    compare1 += 1
-        while (i<j && arr[j] >= base) {
-            j--
-            compare1 += 1
-	        await sleep(T)
-        }
-        // 从左边起，寻找比基数大的数
-        compare1 += 1
-        while (i<j && arr[i] <= base) {
-            i++
-            compare1 += 1
-	        await sleep(T)
-        }
-        compare1 += 1
-        if (i<j) {
-            [arr[i], arr[j]] = [arr[j], arr[i]]
-	        move1 += 3
-        }
-        for(let x = 0; x < N; x++) canvases[3].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
-	    compare1 += 1
-    }
-    arr[left] = arr[i];
-    arr[i] = base;
-    await quickSort_Standard(arr, left, i-1);
-    await quickSort_Standard(arr, i+1, right);
-	return arr;
-}
-//归并排序
-	//js归并
-let mergeSort_Js  = (arr)=>{
-    if (arr.length < 2) return arr
-    let middle = Math.floor(arr.length / 2)
-    return merge_Js(mergeSort_Js(arr.slice(0, middle)), mergeSort_Js(arr.slice(middle)));
-}
-let merge_Js = (left, right)=>{
-    let result = [];
-    while (left.length && right.length) left[0] < right[0] ? result.push(left.shift()) : result.push(right.shift());
-    return result.concat(left, right);
-}
-	//标准归并
-let mergeSort_Standard = async (arr, left, right)=>{
-    if(left >= right) return
-	await mergeSort_Standard(arr, left, Math.floor((left+right)/2))
-    await mergeSort_Standard(arr, Math.floor((left+right)/2) + 1, right)
-    await merge_Standard(arr, left, right, Math.floor((left+right)/2))
-}
-let merge_Standard = async (arr, left, right, middle)=>{
-    await sleep(T)
-    let tmp = [...arr].splice(left, right-left+1)
-    let i = 0
-    let j = middle - left + 1;
-    compare2 += (right - left + 1)
-    move2 += (right - left + 1)*2
-    for(let k = left; k <= right; k++) {
-        if(i>middle-left || tmp[i]>tmp[j]) arr[k]=tmp[j++] //左子树遍历结束 或 。。。
-        else arr[k]=tmp[i++]//右子树遍历结束 或 。。。
-        for(let x = 0; x < N; x++) canvases[4].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
-        await sleep(T*2)
-    }
-}
-//堆排序
-let heapSort = async (arr)=>{
-    let start = performance.now()
-    //初始化大顶堆，从第一个非叶子结点开始
-    for(let i = Math.floor(arr.length/2-1); i>=0; i--) {
-	    await shiftDown(arr, i, arr.length)
-        await sleep(T)
-    }
-    // 排序，每一次for循环找出一个当前最大值，数组长度减一
-    for(let i = arr.length-1; i>0; i--) {
-	    [arr[0], arr[i]] = [arr[i], arr[0]] // 根节点与最后一个节点交换
-        await sleep(T)
-        await shiftDown(arr, 0, i)
-        for(let x = 0; x < N; x++) canvases[5].children[x].style.height = parseInt(1.7 * arr[x]) + 'px'
-    }
-    let end = performance.now()
-    document.getElementById('time6').innerText = '耗时: ' + ((end - start)/1000).toFixed(1) + 's'
-}
-let shiftDown = async (arr, i, length)=>{
-    let tmp = arr[i] // 当前父节点
-    for(let j = 2*i + 1; j<length; j = 2*j+1) {
-        await sleep(T)
-        tmp = arr[i];  // 将 arr[i] 取出，整个过程相当于找到 arr[i] 应处于的位置
-	    compare3 += 1
-        if(arr[j] < arr[j + 1] && j+1 < length) {
-            j++ // 找到两个孩子中较大的一个，再与父节点比较
-        }
-        compare3 += 1
-        if(tmp < arr[j]) {
-            [arr[i], arr[j]] = [arr[j], arr[i]] // 如果父节点小于子节点:交换；否则跳出
-	        move3 += 3
-            i = j  // 交换后，tmp 的下标变为 j
-        } else break
-    }
-}
-//清除耗时数据
-let clearTime = ()=>{
-    for(let i = 1; i < 7; i++){
-        document.getElementById('time' + i).innerText = '耗时:'
-    }
-}
+        // --- 4. 状态管理与 UI ---
+        const params = {
+            shape: 'Saturn',
+            color: '#00ffff',
+            handControl: true, // 是否开启手势
+            interactionStrength: 1.0 // 缩放系数
+        };
 
-</script>
-</html>
+        function updateTargetShape(shapeName) {
+            let generator;
+            switch (shapeName) {
+                case 'Heart': generator = getPointOnHeart; break;
+                case 'Saturn': generator = getPointOnSaturn; break;
+                case 'DNA': generator = getPointOnDNA; break;
+                case 'Fireworks': generator = getPointExplosion; break;
+                default: generator = getPointOnSphere; break;
+            }
+
+            for (let i = 0; i < particleCount; i++) {
+                const p = generator(i);
+                targetPositions[i * 3] = p.x;
+                targetPositions[i * 3 + 1] = p.y;
+                targetPositions[i * 3 + 2] = p.z;
+            }
+        }
+
+        // 初始化第一次形状
+        updateTargetShape(params.shape);
+
+        // GUI 设置
+        const gui = new lil.GUI({ title: '控制面板' });
+        gui.add(params, 'shape', ['Heart', 'Saturn', 'DNA', 'Fireworks']).name('模型形状').onChange(updateTargetShape);
+        gui.addColor(params, 'color').name('粒子颜色').onChange(v => material.color.set(v));
+        gui.add(params, 'interactionStrength', 0.1, 3.0).name('缩放基数').listen(); // listen 允许代码改变UI
+
+        // --- 5. MediaPipe Hands 整合 ---
+        const videoElement = document.getElementById('input-video');
+        let handDistance = 1.0; // 默认为 1 (正常大小)
+        let isHandDetected = false;
+
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        hands.onResults((results) => {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                isHandDetected = true;
+                const landmarks = results.multiHandLandmarks[0];
+
+                // 获取大拇指指尖 (4) 和 食指指尖 (8)
+                const thumbTip = landmarks[4];
+                const indexTip = landmarks[8];
+
+                // 计算欧几里得距离 (屏幕坐标系，大致范围 0 - 1)
+                const distance = Math.sqrt(
+                    Math.pow(thumbTip.x - indexTip.x, 2) +
+                    Math.pow(thumbTip.y - indexTip.y, 2)
+                );
+
+                // 映射距离到缩放系数
+                // 捏合时 distance 约为 0.05，张开时约为 0.2-0.3
+                // 我们希望：捏合 -> 0.2倍大小，张开 -> 2.0倍大小
+                // 将 0.02 - 0.25 映射到 0.2 - 2.5
+                const minInput = 0.02;
