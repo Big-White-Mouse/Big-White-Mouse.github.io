@@ -279,3 +279,100 @@
                 // 我们希望：捏合 -> 0.2倍大小，张开 -> 2.0倍大小
                 // 将 0.02 - 0.25 映射到 0.2 - 2.5
                 const minInput = 0.02;
+const maxInput = 0.25;
+
+                let normalized = (distance - minInput) / (maxInput - minInput);
+                normalized = Math.max(0, Math.min(1, normalized)); // Clamp 0-1
+
+                // 平滑处理 (简单的 Lerp)
+                const targetScale = 0.3 + (normalized * 2.5);
+                handDistance += (targetScale - handDistance) * 0.1; // 缓动
+
+                // 更新 UI 显示的数值
+                params.interactionStrength = parseFloat(handDistance.toFixed(2));
+
+            } else {
+                isHandDetected = false;
+                // 如果没检测到手，慢慢恢复到 1.0
+                handDistance += (1.0 - handDistance) * 0.05;
+            }
+        });
+
+        // 启动摄像头
+        const cameraUtils = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({ image: videoElement });
+            },
+            width: 320,
+            height: 240
+        });
+
+        cameraUtils.start()
+            .then(() => {
+                document.getElementById('loader').style.opacity = '0';
+            })
+            .catch(err => {
+                document.getElementById('loader').innerText = "摄像头访问失败，请确保使用HTTPS或本地环境";
+            });
+
+        // --- 6. 动画循环 ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            controls.update();
+
+            // 粒子动画与变形逻辑
+            const positionsAttribute = geometry.attributes.position;
+            const currentPositions = positionsAttribute.array;
+
+            // 根据手势计算当前的缩放/扩散系数
+            // 如果开启手势控制，使用 handDistance，否则使用 1.0
+            const scale = params.handControl ? handDistance : 1.0;
+
+            for (let i = 0; i < particleCount; i++) {
+                const idx = i * 3;
+
+                // 目标位置 (基于当前选择的形状)
+                let tx = targetPositions[idx];
+                let ty = targetPositions[idx + 1];
+                let tz = targetPositions[idx + 2];
+
+                // 应用手势缩放
+                // 我们可以让粒子直接缩放，或者基于手势增加一点随机扰动(扩散)
+                tx *= scale;
+                ty *= scale;
+                tz *= scale;
+
+                // 如果是烟花模式，可以加一点基于时间的旋转或漂浮
+                if (params.shape === 'Fireworks') {
+                    const time = Date.now() * 0.001;
+                    ty -= Math.sin(time + i) * 0.05; // 简单的漂浮
+                }
+
+                // Lerp 缓动：当前位置 -> 目标位置
+                // 速度系数 3.0 * delta 决定了变形的快慢
+                currentPositions[idx] += (tx - currentPositions[idx]) * 3.0 * delta;
+                currentPositions[idx + 1] += (ty - currentPositions[idx + 1]) * 3.0 * delta;
+                currentPositions[idx + 2] += (tz - currentPositions[idx + 2]) * 3.0 * delta;
+            }
+
+            positionsAttribute.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+
+</html>
